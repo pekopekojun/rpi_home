@@ -25,7 +25,7 @@ char adv_packet[] = {0xe0, 0x00, /*00-01 Company ID : Google */
                                                        0x02:Li-ion ptrn2 */
                      0x00, 0x00, /*05-06 remaining battery
                                         Battery type: 0x00 then always 0x0000
-                                                      0x01 then [0.01 V]
+                                                      0x01 then [mV]
                                                       0x02 then [%]*/
                      0x01,       /*07    Enable Sensor: bit0:Temp
                                                         bit1:Hum
@@ -38,7 +38,7 @@ char adv_packet[] = {0xe0, 0x00, /*00-01 Company ID : Google */
                     };
 
 // M5 Stack
-int get_gattery_gauge(void)
+int get_battery_gauge_for_m5stack(void)
 {
   int reg = 0xff;
   Wire.beginTransmission(0x75);
@@ -52,11 +52,32 @@ int get_gattery_gauge(void)
   }
 }
 
-void set_temp(short v)
+void set_battery_type(uint8_t type)
+{
+  adv_packet[4] = type;
+}
+
+float get_battery_mv_for_li_ion(void)
+{
+  int ad = analogRead(A5); // silk 33
+  float raw_v = ((long)ad * 3.3f * 1000) / 4096;
+  float conv_v = raw_v * (4720.0 / 3040.0);
+  return conv_v;
+}
+
+void set_remaining_battery(uint16_t mv)
+{
+  adv_packet[5] = mv & 0xff;
+  adv_packet[6] = (mv >> 8) & 0xff;
+}
+
+void set_temp(int16_t v)
 {
   adv_packet[8] = v & 0xff;
   adv_packet[9] = (v >> 8) & 0xff;
 }
+
+
 
 void update_adv(void)
 {
@@ -71,7 +92,7 @@ void setup() {
   //Serial.begin(115200);
 
   if (!tempsensor.begin()) {
-  //  Serial.println("Couldn't find ADT7410!");
+    //  Serial.println("Couldn't find ADT7410!");
   }
   //Wait 240ms
   start = millis();
@@ -95,31 +116,38 @@ void setup() {
     delay(240 - diff + 10 /* 10 is margin */);
   }
 
-  short c = (short)(tempsensor.readTempC() * 100U);
+  int16_t c = (int16_t)(tempsensor.readTempC() * 100U);
+  uint16_t b = (uint16_t)get_battery_mv_for_li_ion();
+  set_battery_type(0x01);
+  set_remaining_battery(b);
   set_temp(c);
+  
   update_adv();
 
   pAdvertising->start();
-//  Serial.println("Start Advertising");
+  //  Serial.println("Start Advertising");
 }
 
 
 void loop() {
-  /* Adv interval 200ms * 25 times (5Sec), DeepSleep timer is 25Sec*/
+  /* Adv interval 200ms * 25 times (5Sec), DeepSleep timer is 55Sec*/
   delay(5000);
 
   esp_sleep_enable_timer_wakeup(25 * 1000 * 1000);  // wakeup every 5secs
-  //Serial.println("zzz...");
+//  Serial.println("zzz...");
   esp_deep_sleep_start();
-  /*
-    short c = (short)(tempsensor.readTempC() * 100U);
-    set_temp(c);
+/*
+  int16_t c = (int16_t)(tempsensor.readTempC() * 100U);
+  uint16_t b = (uint16_t)get_battery_mv_for_li_ion();
+  set_battery_type(0x01);
+  set_remaining_battery(b);
+  set_temp(c);
 
-    Serial.print("Temp: "); Serial.print(c); Serial.println("*C");
-    set_temp(c);
-    update_adv();
-    Serial.print (get_gattery_gauge());
-    Serial.println ("");
-    delay(100);
-  */
+  Serial.print("Temp: "); Serial.print(c); Serial.println("*C");
+  set_temp(c);
+  update_adv();
+  Serial.print (b);
+  Serial.println ("");
+  delay(100);
+*/
 }
