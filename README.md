@@ -1,1 +1,1 @@
-"# rpi_home" 
+# rpi_home
