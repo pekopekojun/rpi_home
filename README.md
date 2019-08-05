@@ -1,3 +1,14 @@
 # rpi_home
 
-## Google Home
+## Google home notifier
+
+### Install forever
+~~~
+npm install -g forever
+~~~
+
+### Start
+
+~~~
+forever start speach_server.js
+~~~
