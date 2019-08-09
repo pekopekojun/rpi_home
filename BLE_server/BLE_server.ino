@@ -33,8 +33,8 @@ char adv_packet[] = {0xe0, 0x00, /*00-01 Company ID : Google */
                                                         bit3:Lum*/
                      0x00, 0x00, /*08-09 Temp  Value: signed short [0.01 degree]*/
                      0x00,       /*10    Hum   Value: unsigned char [%]*/
-                     0x00, 0x00, /*11-12 Lum   Value: unsigned short [lux] */
-                     0x00, 0x00, /*13-14 Press Value: unsigned short [hPa] */
+                     0x00, 0x00, /*11-12 Press Value: unsigned short [hPa]*/
+                     0x00, 0x00, /*13-14 Lum   Value: unsigned short [lux] */
                     };
 
 // M5 Stack
@@ -130,10 +130,10 @@ void setup() {
 
 
 void loop() {
-  /* Adv interval 200ms * 25 times (5Sec), DeepSleep timer is 55Sec*/
-  delay(5000);
+  /* Adv interval 200ms * 15 times (3Sec), DeepSleep timer is 177Sec*/
+  delay(3000);
 
-  esp_sleep_enable_timer_wakeup(25 * 1000 * 1000);  // wakeup every 5secs
+  esp_sleep_enable_timer_wakeup(177 * 1000 * 1000);  // wakeup every 5secs
 //  Serial.println("zzz...");
   esp_deep_sleep_start();
 /*
