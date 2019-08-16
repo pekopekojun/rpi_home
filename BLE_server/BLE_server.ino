@@ -1,8 +1,18 @@
+/**
+ * BLE Sensor Beacon for ESP32
+ *  
+ * Copyright (c) 2019 Jun Sato (peko_jun)
+ * Released under the MIT license.
+ * see https://opensource.org/licenses/MIT
+ */
+
 /*
-    Based on Neil Kolban example for IDF: https://github.com/nkolban/esp32-snippets/blob/master/cpp_utils/tests/BLE%20Tests/SampleServer.cpp
-    Ported to Arduino ESP32 by Evandro Copercini
-    updates by chegewara
-*/
+ * Supporting sensors
+ *  - Temperature sensor  
+ *    - Hardware : ADT7410 (http://akizukidenshi.com/catalog/g/gM-06675/)
+ *    - Library :  Adafruit_ADT7410 (https://github.com/adafruit/Adafruit_ADT7410)
+ *
+ */
 
 #include <BLEDevice.h>
 #include <BLEUtils.h>
@@ -10,11 +20,7 @@
 #include <Wire.h>
 #include "Adafruit_ADT7410.h"
 
-
-// Create the ADT7410 temperature sensor object
 Adafruit_ADT7410 tempsensor = Adafruit_ADT7410();
-
-
 BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
 
 char adv_packet[] = {0xe0, 0x00, /*00-01 Company ID : Google */
@@ -37,21 +43,6 @@ char adv_packet[] = {0xe0, 0x00, /*00-01 Company ID : Google */
                      0x00, 0x00, /*13-14 Lum   Value: unsigned short [lux] */
                     };
 
-// M5 Stack
-int get_battery_gauge_for_m5stack(void)
-{
-  int reg = 0xff;
-  Wire.beginTransmission(0x75);
-  Wire.write(0x78);
-  Wire.endTransmission(false);
-  if (Wire.requestFrom(0x75, 1)) {
-    reg = Wire.read();
-    return reg; /*bit7: 75%, bit6:50% bit5:25% bit4: Below 3.2v */
-  } else {
-    return -1;
-  }
-}
-
 void set_battery_type(uint8_t type)
 {
   adv_packet[4] = type;
@@ -59,6 +50,7 @@ void set_battery_type(uint8_t type)
 
 float get_battery_mv_for_li_ion(void)
 {
+  // TODO: Not implemented properly
   int ad = analogRead(A5); // silk 33
   float raw_v = ((long)ad * 3.3f * 1000) / 4096;
   float conv_v = raw_v * (4720.0 / 3040.0);
@@ -76,8 +68,6 @@ void set_temp(int16_t v)
   adv_packet[8] = v & 0xff;
   adv_packet[9] = (v >> 8) & 0xff;
 }
-
-
 
 void update_adv(void)
 {
@@ -125,29 +115,14 @@ void setup() {
   update_adv();
 
   pAdvertising->start();
-  //  Serial.println("Start Advertising");
 }
 
+#define ADV_TIME_MS (3000)
+#define DEEP_SLEEP_TIME_MS ((250 * 1000) - ADV_TIME_MS)
 
 void loop() {
-  /* Adv interval 200ms * 15 times (3Sec), DeepSleep timer is 177Sec*/
-  delay(3000);
+  delay(ADV_TIME_MS);
 
-  esp_sleep_enable_timer_wakeup(177 * 1000 * 1000);  // wakeup every 5secs
-//  Serial.println("zzz...");
+  esp_sleep_enable_timer_wakeup(DEEP_SLEEP_TIME_MS * 1000);  
   esp_deep_sleep_start();
-/*
-  int16_t c = (int16_t)(tempsensor.readTempC() * 100U);
-  uint16_t b = (uint16_t)get_battery_mv_for_li_ion();
-  set_battery_type(0x01);
-  set_remaining_battery(b);
-  set_temp(c);
-
-  Serial.print("Temp: "); Serial.print(c); Serial.println("*C");
-  set_temp(c);
-  update_adv();
-  Serial.print (b);
-  Serial.println ("");
-  delay(100);
-*/
 }
