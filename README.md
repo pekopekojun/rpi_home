@@ -119,6 +119,8 @@ unzip ssd_300_vgg.ckpt.zip
 
   Set "PasswordAuthentication no"
 
+# Tips
+
 ### Shut down
 
 ~~~
