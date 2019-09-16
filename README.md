@@ -1,6 +1,6 @@
-# Raspberry pi 3 B+ setup
+# Raspberry pi 3 B+ setup and Tpis
 
-## Update OS
+## Update OS and pip
 ~~~
 sudo apt-get update
 sudo apt-get -y install vim
@@ -19,6 +19,7 @@ sudo raspi-config
 - SSH: Enable
 - Timezone: Tokyo
 - Locale: ja-UTF8
+- Audio: Force jack
 - Update
 
 ## Set Static IP
@@ -37,7 +38,7 @@ static domain_name_servers=192.168.10.xxx
 
 ### Wifi
 ~~~
-interface wlan
+interface wlan0
 static ip_address=192.168.10.xxx/24
 static routers=192.168.10.xxx
 static domain_name_servers=192.168.10.xxx
@@ -45,7 +46,34 @@ static domain_name_servers=192.168.10.xxx
 
 > routers,domain_name_servers = Router IP or Bridge IP
 
-## Python3 ,Tensor Flow and OpenCV
+## SSH Setup
+
+- Keygen
+  ~~~
+  ssh-keygen -t rsa
+  ~~~
+
+- Send to Raspberry pi
+  ~~~
+  scp -P 22 .ssh/id_rsa.pub pi@192.168.xx.x:/home/pi/Documents  
+  ~~~
+
+- Register key
+  ~~~
+  mkdir ~/.ssh
+  cat ~/Documents/id_rsa.pub >> ~/.ssh/authorized_keys
+  chmod 700 ~/.ssh/authorized_keys
+  ~~~
+
+- Disable Password Authentication
+  ~~~
+  sudo nano /etc/ssh/sshd_config
+  ~~~
+
+  Set "PasswordAuthentication no"
+
+# Python3 ,Tensor Flow and OpenCV
+
 https://qiita.com/masaru/items/658b24b0806144cfeb1c
 https://www.pyimagesearch.com/2018/09/19/pip-install-opencv/
 https://qiita.com/mt08/items/e8e8e728cf106ac83218
@@ -78,6 +106,7 @@ sudo pip3 install scipy
 
 ## OpenCV
 ~~~
+sudo apt update
 sudo apt -y install libhdf5-dev libhdf5-serial-dev libhdf5-100
 sudo apt -y install libqtgui4 libqtwebkit4 libqt4-test python3-pyqt5
 sudo apt -y install libatlas-base-dev
@@ -94,30 +123,10 @@ git clone https://github.com/balancap/SSD-Tensorflow.git
 ~~~
 unzip ssd_300_vgg.ckpt.zip
 
-### SSH
-
-- Keygen
-  ~~~
-  ssh-keygen -t rsa
-  ~~~
-
-- Send to Raspberry pi
-  ~~~
-  scp -P 22 .ssh/id_rsa.pub pi@192.168.xx.x:/home/pi/Documents  
-  ~~~
-
-- Register key
-  ~~~
-  cat /home/pi/Documents/id_rsa.pub >> /home/pi/.ssh/authorized_keys
-  chmod 700 /home/pi/.ssh/authorized_keys
-  ~~~
-
-- Disable Password Authentication
-  ~~~
-  sudo vi /etc/ssh/sshd_config
-  ~~~
-
-  Set "PasswordAuthentication no"
+## Flask
+~~~
+sudo pip3 install flask
+~~~
 
 # Tips
 
@@ -137,3 +146,32 @@ npm install -g forever
 ~~~
 forever start speach_server.js
 ~~~
+
+### 常駐方法
+
+Refer to https://qiita.com/molchiro/items/ee32a11b81fa1dc2fd8d
+
+```
+sudo nano /etc/systemd/system/cat_det.service
+
+```
+
+```
+[Unit]
+Description=do something
+
+[Service]
+WorkingDirectory= /home/pi/systemd
+ExecStart=/usr/bin/python /home/pi/systemd/a.py
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```
+# reboot
+sudo systemctl enable cat_det.service
+
+# no reboot for test
+sudo systemctl start cat_det.service
+```
